@@ -8,7 +8,7 @@
   "server": {
     "ip": "Ghopghip.aternos.me",
     "port": 33526,
-    "version": "1.20.1",
+    "version": false,
     "try-creative": false
   },
   "position": {

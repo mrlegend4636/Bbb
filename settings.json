@@ -6,8 +6,8 @@
     "type": "offline"
   },
   "server": {
-    "ip": "Ghopghip.aternos.me",
-    "port": 33526,
+    "ip": "spideyplayzsmp.play.hosting",
+    "port": 5221,
     "version": false,
     "try-creative": false
   },

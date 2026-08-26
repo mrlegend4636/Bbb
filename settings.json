@@ -7,7 +7,7 @@
   },
   "server": {
     "ip": "spideyplayzsmp.play.hosting",
-    "port": 5221,
+    "port": 25565,
     "version": false,
     "try-creative": false
   },

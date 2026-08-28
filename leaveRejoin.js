@@ -2,7 +2,7 @@ function randomMs(minMs, maxMs) {
     return Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs
 }
 
-function setupLeaveRejoin(bot, createBot) {
+function setupLeaveRejoin(bot, botState, scheduleReconnect) {
     // Timers
     let leaveTimer = null
     let jumpTimer = null
@@ -11,6 +11,7 @@ function setupLeaveRejoin(bot, createBot) {
 
     // State
     let stopped = false
+    let isLeavingIntentionally = false
     let reconnectAttempts = 0
     let lastLogAt = 0
 
@@ -44,7 +45,7 @@ function setupLeaveRejoin(bot, createBot) {
         jumpTimer = setTimeout(scheduleNextJump, nextJump)
     }
 
-    function scheduleReconnect(reason = 'end') {
+    function scheduleNextRejoin(reason = 'leave-cycle') {
         if (stopped) return
 
         // FAST RECONNECT: 2s -> 10s (User requested faster)
@@ -56,19 +57,16 @@ function setupLeaveRejoin(bot, createBot) {
             delay += 5000 // Add 5s if it's failing a lot
         }
 
-        // Cap at 30s max
+        // Cap at 15s max
         delay = Math.min(delay, 15000)
 
-        logThrottled(`[AFK] Rejoin scheduled in ${Math.round(delay / 1000)}s (reason: ${reason}, attempt: ${reconnectAttempts})`)
+        logThrottled(`[AFK] Will rejoin in ${Math.round(delay / 1000)}s (reason: ${reason}, attempt: ${reconnectAttempts})`)
 
         reconnectTimer = setTimeout(() => {
             if (stopped) return
-            try {
-                if (typeof createBot === 'function') createBot()
-            } catch (e) {
-                console.log('[AFK] createBot error:', e?.message || e)
-                scheduleReconnect('createBot-error')
-            }
+            isLeavingIntentionally = false
+            // Let index.js handle reconnection naturally
+            scheduleReconnect()
         }, delay)
     }
 
@@ -79,9 +77,9 @@ function setupLeaveRejoin(bot, createBot) {
         // clear any old timers
         cleanup()
         stopped = false
+        isLeavingIntentionally = false
 
-        // Stay connected: 2 minutes -> 15 minutes (More realistic AFK behavior)
-        // Stay connected 1-5 minutes before a scheduled leave/rejoin cycle.
+        // Stay connected: 1-5 minutes before a scheduled leave/rejoin cycle
         const stayTime = randomMs(60000, 300000)
 
         logThrottled(`[AFK] Will leave in ${Math.round(stayTime / 1000)} seconds`)
@@ -90,7 +88,11 @@ function setupLeaveRejoin(bot, createBot) {
 
         leaveTimer = setTimeout(() => {
             if (stopped) return
-            logThrottled('[AFK] Leaving server (timer)')
+            logThrottled('[AFK] Leaving server (scheduled cycle)')
+            
+            // Mark that we're leaving intentionally so reconnect knows to rejoin
+            isLeavingIntentionally = true
+            
             cleanup()
             try {
                 bot.quit()
@@ -100,9 +102,14 @@ function setupLeaveRejoin(bot, createBot) {
         }, stayTime)
     })
 
-    // When the connection ends for ANY reason, just clean up our timers.
-    // Reconnection is handled by index.js — no duplicate reconnect here.
+    // When the connection ends, check if it was intentional
+    // If so, schedule a rejoin. Otherwise let index.js handle auto-recovery.
     bot.on('end', () => {
+        if (isLeavingIntentionally) {
+            // This was our scheduled leave - schedule rejoin
+            scheduleNextRejoin('leave-cycle')
+            isLeavingIntentionally = false
+        }
         cleanup()
     })
 

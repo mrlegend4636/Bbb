@@ -9,11 +9,11 @@ IMAGE_NAME=mrlegend4636/bbb:latest
 echo "Building image ${IMAGE_NAME}..."
 docker build -t "${IMAGE_NAME}" .
 
-echo "Running container with limits: --memory=150m --cpus=0.25"
+echo "Running container with limits: --memory=100m --cpus=0.15"
 docker run --rm \
   --name bbb-bot \
-  --memory=150m \
-  --cpus=0.25 \
+  --memory=100m \
+  --cpus=0.15 \
   -e LIGHT_MODE=1 \
   -p 5000:5000 \
   "${IMAGE_NAME}"

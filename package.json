@@ -4,16 +4,16 @@
   "description": "Robust AFK bot for Minecraft servers with infinite uptime.",
   "main": "index.js",
   "scripts": {
-    "start": "node --max-old-space-size=80 --max-http-header-size=8192 index.js",
+    "start": "cpulimit -l 10 -- node --max-old-space-size=80 index.js",
     "test": "node --check index.js",
     "docker:run": "docker build -t mrlegend4636/bbb:latest . && docker run --rm --name bbb-bot --memory=100m --cpus=0.1 -e LIGHT_MODE=1 -p 5000:5000 mrlegend4636/bbb:latest"
   },
   "author": "Lamgerr",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
-    "minecraft-data": "^3.69.0",
-    "mineflayer": "^4.9.6",
-    "mineflayer-pathfinder": "^2.4.4"
+    "express": "^4.18.1",
+    "minecraft-data": "^3.103.0",
+    "mineflayer": "^4.34.0",
+    "mineflayer-pathfinder": "^2.1.1"
   }
 }

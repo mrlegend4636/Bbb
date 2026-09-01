@@ -1245,14 +1245,17 @@ function createBot() {
     let spawnHandled = false;
 
     bot.once("spawn", () => {
-      if (spawnHandled) return;
-      spawnHandled = true;
+  if (spawnHandled) return;
+  spawnHandled = true;
 
-      clearBotTimeouts();
-      botState.connected = true;
-      botState.lastActivity = Date.now();
-      botState.reconnectAttempts = 0;
-      isReconnecting = false;
+  // FIX: CLEAR CONNECTION TIMEOUT IMMEDIATELY ON SPAWN
+  if (connectionTimeoutId) {
+    clearTimeout(connectionTimeoutId);
+    connectionTimeoutId = null;
+  }
+  
+  clearBotTimeouts();  // Existing code
+  // ... rest of spawn handler
 
       addLog(
         `[Bot] [+] Successfully spawned on server! (Version: ${bot.version})`,

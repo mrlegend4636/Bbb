@@ -1253,9 +1253,59 @@ function createBot() {
     clearTimeout(connectionTimeoutId);
     connectionTimeoutId = null;
   }
-  
-  clearBotTimeouts();  // Existing code
-  // ... rest of spawn handler
+
+  // Mark bot as connected so modules gated by botState.connected run
+  botState.connected = true;
+  botState.startTime = Date.now();
+  botState.lastActivity = Date.now();
+  botState.reconnectAttempts = 0;
+  addLog(`[Bot] State: connected=true, startTime reset`);
+
+  // Clear any pending timeouts from previous attempts
+  clearBotTimeouts();
+
+  addLog(
+    `[Bot] [+] Successfully spawned on server! (Version: ${bot.version})`,
+  );
+
+  if (
+    config.discord &&
+    config.discord.events &&
+    config.discord.events.connect
+  ) {
+    sendDiscordWebhook(
+      `[+] **Connected** to \`${config.server.ip}\``,
+      0x4ade80,
+    );
+  }
+
+  // FIX: use bot.version (auto-detected) instead of config value so minecraft-data always matches
+  const mcData = require("minecraft-data")(bot.version);
+  const defaultMove = new Movements(bot, mcData);
+  defaultMove.allowFreeMotion = false;
+  defaultMove.canDig = false;
+  defaultMove.liquidCost = 1000;
+  defaultMove.fallDamageCost = 1000;
+
+  initializeModules(bot, mcData, defaultMove);
+
+  // Attempt creative mode (only works if bot has OP and enabled in settings)
+  setTimeout(() => {
+    if (bot && botState.connected && config.server["try-creative"]) {
+      bot.chat("/gamemode creative");
+      addLog("[INFO] Attempted to set creative mode (requires OP)");
+    }
+  }, 3000);
+
+  bot.on("messagestr", (message) => {
+    if (
+      message.includes("commands.gamemode.success.self") ||
+      message.includes("Set own game mode to Creative Mode")
+    ) {
+      addLog("[INFO] Bot is now in Creative Mode.");
+    }
+  });
+});
 
       addLog(
         `[Bot] [+] Successfully spawned on server! (Version: ${bot.version})`,
